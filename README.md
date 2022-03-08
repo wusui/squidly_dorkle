@@ -22,11 +22,11 @@ Main solving logic modle
 
 Interface to the web page
 
-### file_io.py
+##### file_io.py
 
 Module for keeping track of answers.txt and allowed.txt
 
-### mad_scientist_lab
+##### mad_scientist_lab
 
 Folder of experimental files run to help come up with some of the ideas
 implemented
