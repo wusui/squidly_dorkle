@@ -1,4 +1,4 @@
-# squidy_dorkle
+# squidly_dorkle
 
 # Sedecordle solver
 

@@ -1,8 +1,8 @@
 # (c) 2022 Warren Usui
-# Squidy_dorkle
+# Squidly_dorkle
 # This code is licensed under the MIT license (see LICENSE.txt for details)
 """
-Squidy_dorkle
+Squidly_dorkle
 """
 from web_interface import WebInterface
 from web_interface import WEBSITE
