@@ -5,7 +5,6 @@
 Solving engine for squidly_dorkle
 """
 import os
-import json
 from datetime import datetime
 from time import sleep
 
@@ -32,6 +31,8 @@ class Solver():
         self.guess_list = get_words("allowed.txt")
         self.wordtable = do_scan(STARTER, get_words("answers.txt"))
         self.delay = delay
+        fname = datetime.now().strftime("errorlog-%Y-%m-%d-%H-%M-%S")
+        self.elog = os.sep.join(["data", fname])
 
     def real_brains(self, gm_interface):
         """
@@ -52,8 +53,8 @@ class Solver():
                 self.new_entries[word] = self.wordtable[tindex][0]
             else:
                 self.dup_words[word] = self.wordtable[tindex]
-        for _ in range(0, 2):
-            if len(self.dup_words) > 0:
+        if len(self.dup_words) > 0:
+            if self.handle_dup_cases(gm_interface):
                 self.handle_dup_cases(gm_interface)
 
     def handle_dup_cases(self, gm_interface):
@@ -82,13 +83,15 @@ class Solver():
                         break
                 if okay:
                     gm_interface.add_word(chkword)
-                    return
-            print("We should not be here")
-            with open(os.sep.join(["data", "failure.txt"]), "a",
-                      encoding="utf8") as fbad:
-                bad_news = json.dumps(self.dup_words)
-                fbad.write(bad_news)
+                    return True
+            with open(self.elog, "a", encoding="UTF-8") as fdesc:
+                fdesc.write(", ".join(gm_interface.clue_list) + "\n")
+                for ent in self.dup_words:
+                    if len(self.dup_words[ent]) > 0:
+                        fdesc.write("     " + ", ".join(self.dup_words[ent]) +
+                                                        "\n")
             gm_interface.shutdown()
+        return False
 
     def eval_next_lv(self, gm_interface, entry):
         """
@@ -299,16 +302,10 @@ def solve_it(gm_interface):
     extract_data('answers')
     if not os.path.exists("data"):
         os.mkdir("data")
-    fname = datetime.now().strftime("result-%Y-%m-%d-%H-%M-%S")
-    fname = os.sep.join(["data", fname])
     solvr = Solver()
     for _ in range(0, gm_interface.runs):
         solvr.real_brains(gm_interface)
         print(gm_interface.input)
-        header = gm_interface.identify_if_solved()
-        out_txt = header + ": " + ", ".join(solvr.input)
-        with open(fname, "w", encoding="UTF-8") as fdesc:
-            fdesc.write(out_txt)
         gm_interface.input = []
         gm_interface.dup_words = {}
         gm_interface.new_entries = {}

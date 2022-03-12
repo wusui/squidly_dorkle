@@ -45,18 +45,6 @@ class WebInterface():
         elem = self.driver.find_element(By.ID, "enter2")
         elem.click()
 
-    def identify_if_solved(self):
-        """
-        Look at the background color of the final page.  Solved if green,
-        failed if red.
-        """
-        elem1 = self.driver.find_element(By.ID, "body")
-        bgc_info = elem1.value_of_css_property("background-color")
-        header = "unsolved"
-        if bgc_info.find("0, 128, 0,") > 0:
-            header = "solved"
-        return header
-
     def chk_word_in_grid(self, word, limitv):
         """
         Extract the color (Yellow/Green) information from words in the grid

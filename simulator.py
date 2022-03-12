@@ -44,16 +44,6 @@ class SimInterface():
         patt = eval_guess(self.clue_list[indx],  word)
         self.yg_patterns[indx].append(patt)
 
-    def identify_if_solved(self):
-        """
-        Return "solved" if puzzle is solved, unsolved if at least one word
-        is not all green.
-        """
-        for indx in range(0, 16):
-            if self.yg_patterns[indx][-1] != "GGGGG":
-                return "unsolved"
-        return "solved"
-
     def chk_word_in_grid(self, word, limitv):
         """
         Get pattern for this word nuumber
