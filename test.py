@@ -4,8 +4,7 @@
 """
 Squidly_dorkle real program
 """
-from web_interface import WebInterface
-from web_interface import WEBSITE
+from test_backend import TestBackend
 from brainz import solve_it
 if __name__ == "__main__":
-    solve_it(WebInterface(WEBSITE, 10))
+    solve_it(TestBackend())

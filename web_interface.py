@@ -27,8 +27,9 @@ class WebInterface():
         self.driver.maximize_window()
         elem1 = self.driver.find_element(By.ID, "free")
         elem1.click()
+        self.input = []
+        self.runs = 1
         self.delay = delay
-        self.max_times = 1
 
     def add_word(self, word):
         """
@@ -37,6 +38,7 @@ class WebInterface():
 
         @param word String word that is being guessed
         """
+        self.input.append(word)
         for letter in word:
             elem = self.driver.find_element(By.ID, letter)
             elem.click()
@@ -59,8 +61,8 @@ class WebInterface():
         """
         Extract the color (Yellow/Green) information from words in the grid
 
-        @param String word word to check
-        @param int limitv Length of word (default 5)
+        @param int word number of word to check
+        @param int limitv maximum number of guesses made so far + 1
         """
         indx = []
         for guess in range(1, limitv):
@@ -81,13 +83,6 @@ class WebInterface():
                     boxes.append("G")
             indx.append(''.join(boxes))
         return indx
-
-    def multi_record(self, count):
-        """
-        Stub when using web interface
-        """
-        print(self.delay)
-        print("Should not get here: " + str(count))
 
     def shutdown(self):
         """

@@ -25,25 +25,15 @@ class Solver():
     guess_list  -- allowed guesses
     wordtable   -- all possible answers
     """
-    def __init__(self, gm_inf):
-        self.interf = gm_inf
+    def __init__(self, delay=0):
         self.input = []
         self.new_entries = {}
         self.dup_words = {}
         self.guess_list = get_words("allowed.txt")
         self.wordtable = do_scan(STARTER, get_words("answers.txt"))
+        self.delay = delay
 
-    def add_word(self, word):
-        """
-        Make sure that a word gets added to both the display and the internal
-        input list
-
-        @param word String word to add
-        """
-        self.interf.add_word(word)
-        self.input.append(word)
-
-    def real_brains(self):
+    def real_brains(self, gm_interface):
         """
         Check the words in the grid against the intial guesses
         Changes new_entries and dup_word values.
@@ -51,31 +41,31 @@ class Solver():
         @param solver object Solver class object
         """
         for word in STARTER:
-            self.add_word(word)
+            gm_interface.add_word(word)
         for word in range(1, 17):
-            indx = self.interf.chk_word_in_grid(word, 5)
+            indx = gm_interface.chk_word_in_grid(word, 5)
             tindex = '|'.join(indx)
             if "GGGGG" in tindex:
                 continue
             if len(self.wordtable[tindex]) == 1:
-                self.add_word(self.wordtable[tindex][0])
+                gm_interface.add_word(self.wordtable[tindex][0])
                 self.new_entries[word] = self.wordtable[tindex][0]
             else:
                 self.dup_words[word] = self.wordtable[tindex]
         for _ in range(0, 2):
             if len(self.dup_words) > 0:
-                self.handle_dup_cases()
+                self.handle_dup_cases(gm_interface)
 
-    def handle_dup_cases(self):
+    def handle_dup_cases(self, gm_interface):
         """
         At this point, scan all the unsolved words against later guesses
         """
         while len(self.dup_words) > 0:
             nwd = {}
             for entry in self.dup_words:
-                answ = self.eval_next_lv(entry)
+                answ = self.eval_next_lv(gm_interface, entry)
                 if len(answ) == 1:
-                    self.add_word(answ[0])
+                    gm_interface.add_word(answ[0])
                     self.new_entries[entry] = answ[0]
                 else:
                     nwd[entry] = answ
@@ -91,16 +81,16 @@ class Solver():
                         okay = False
                         break
                 if okay:
-                    self.add_word(chkword)
+                    gm_interface.add_word(chkword)
                     return
             print("We should not be here")
             with open(os.sep.join(["data", "failure.txt"]), "a",
                       encoding="utf8") as fbad:
                 bad_news = json.dumps(self.dup_words)
                 fbad.write(bad_news)
-            self.interf.shutdown()
+            gm_interface.shutdown()
 
-    def eval_next_lv(self, entry):
+    def eval_next_lv(self, gm_interface, entry):
         """
         Evaluate the word list against all information in the grid
 
@@ -110,10 +100,10 @@ class Solver():
         gpat = 5 * [""]
         ypat = 5 * [""]
         unused = ""
-        for indx, sptrn in enumerate(self.interf.chk_word_in_grid(entry, 22)):
+        for indx, sptrn in enumerate(gm_interface.chk_word_in_grid(entry, 22)):
             maybebad = ""
             for indx2, spce in enumerate(sptrn):
-                lchar = self.input[indx][indx2]
+                lchar = gm_interface.input[indx][indx2]
                 if spce == "Y":
                     if lchar not in ypat[indx2]:
                         ypat[indx2] += lchar
@@ -122,32 +112,32 @@ class Solver():
                 if spce == ".":
                     if lchar not in unused:
                         maybebad += lchar
-            unused += self.addbad(indx, sptrn, maybebad)
+            unused += addbad(indx, sptrn, maybebad, gm_interface)
         ans_list = []
         for word in self.dup_words[entry]:
             if not check_b4_adding(word, gpat, ypat, unused):
                 ans_list.append(word)
         return ans_list
 
-    def addbad(self, indx, sptrn, maybebad):
-        """
-        Add to the unused character list
+def addbad(indx, sptrn, maybebad, gm_interface):
+    """
+    Add to the unused character list
 
-        @param integer indx index into the sedecordle word grid
-        @param String sptrn word information from word grid
-        @param String maybebad potentially bad letters
-        @return String unused letters
-        """
-        letsunused = ""
-        for lchr in maybebad:
-            bad = True
-            for indx2, spce in enumerate(sptrn):
-                if spce != ".":
-                    if self.input[indx][indx2] == lchr:
-                        bad = False
-            if bad:
-                letsunused += lchr
-        return letsunused
+    @param integer indx index into the sedecordle word grid
+    @param String sptrn word information from word grid
+    @param String maybebad potentially bad letters
+    @return String unused letters
+    """
+    letsunused = ""
+    for lchr in maybebad:
+        bad = True
+        for indx2, spce in enumerate(sptrn):
+            if spce != ".":
+                if gm_interface.input[indx][indx2] == lchr:
+                    bad = False
+        if bad:
+            letsunused += lchr
+    return letsunused
 
 def check_guess(word, guess):
     """
@@ -209,36 +199,6 @@ def get_words(wlist):
     with open(wlist, "r", encoding="UTF-8") as f_file:
         ostr = f_file.read()
     return ostr.split()
-
-def solve_it(gm_interface, tcount=1):
-    """
-    Main solving routine. Make sure files are set up,call real_brains
-    and record the results
-
-    @param gm_interface object Interface used (webpage, debugger,
-           or simulator)
-    @param tcount integer number of times to run the test.  This should
-           only be set for simulations.
-    """
-    extract_data('allowed')
-    extract_data('answers')
-    if not os.path.exists("data"):
-        os.mkdir("data")
-    solvr = Solver(gm_interface)
-    for ttime in range(0, tcount):
-        solvr.real_brains()
-        header = gm_interface.identify_if_solved()
-        if tcount == 1 or gm_interface.max_times == 1:
-            out_txt = ", ".join(solvr.input)
-            fname = header + datetime.now().strftime("-%Y-%m-%d-%H-%M-%S")
-            fname = os.sep.join(["data", fname])
-            with open(fname, "w", encoding="UTF-8") as fdesc:
-                fdesc.write(out_txt)
-            break
-        else:
-            gm_interface.multi_record(ttime)
-    sleep(solvr.interf.delay)
-    gm_interface.shutdown()
 
 def check_b4_adding(word, gpat, ypat, unused):
     """
@@ -326,3 +286,34 @@ def get_yg_val(poss_word, guess):
             if letter in nong:
                 yg_str = yg_str[:indx] + "Y" + yg_str[indx + 1:]
     return yg_str
+
+def solve_it(gm_interface):
+    """
+    Main solving routine. Make sure files are set up,call real_brains
+    and record the results
+
+    @param gm_interface object Interface used (webpage, debugger,
+           or simulator)
+    """
+    extract_data('allowed')
+    extract_data('answers')
+    if not os.path.exists("data"):
+        os.mkdir("data")
+    fname = datetime.now().strftime("result-%Y-%m-%d-%H-%M-%S")
+    fname = os.sep.join(["data", fname])
+    solvr = Solver()
+    for _ in range(0, gm_interface.runs):
+        solvr.real_brains(gm_interface)
+        print(gm_interface.input)
+        header = gm_interface.identify_if_solved()
+        out_txt = header + ": " + ", ".join(solvr.input)
+        with open(fname, "w", encoding="UTF-8") as fdesc:
+            fdesc.write(out_txt)
+        gm_interface.input = []
+        gm_interface.dup_words = {}
+        gm_interface.new_entries = {}
+        gm_interface.yg_patterns = [ [] for _ in range(0, 16)]
+        if gm_interface.runs > 1:
+            gm_interface.clue_list = gm_interface.get_next()
+    sleep(gm_interface.delay)
+    gm_interface.shutdown()
