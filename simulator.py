@@ -7,6 +7,9 @@ generator so that a lot of tests can be run.
 """
 import os
 import json
+
+from file_io import extract_data
+
 class SimInterface():
     """
     Sedecordle simulator.  Useful for testing, debugging, and code exercising.
@@ -15,6 +18,8 @@ class SimInterface():
     @param runs integer number of times to run this
     """
     def __init__(self):
+        extract_data('allowed')
+        extract_data('answers')
         self.yg_patterns = [ [] for _ in range(0, 16)]
         self.input = []
         self.clue_list = []

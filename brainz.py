@@ -8,8 +8,6 @@ import os
 from datetime import datetime
 from time import sleep
 
-from file_io import extract_data
-
 STARTER = ["blade", "comfy", "right", "spunk"]
 
 class Solver():
@@ -298,8 +296,6 @@ def solve_it(gm_interface):
     @param gm_interface object Interface used (webpage, debugger,
            or simulator)
     """
-    extract_data('allowed')
-    extract_data('answers')
     if not os.path.exists("data"):
         os.mkdir("data")
     solvr = Solver()

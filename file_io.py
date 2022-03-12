@@ -16,9 +16,9 @@ def extract_data(field):
 
     @param field String file name (allowed or answers)
     """
-    from_loc = ''.join([field, ' = "'])
-    if exists(from_loc):
+    if exists(field):
         return
+    from_loc = ''.join([field, ' = "'])
     wpage = requests.get(WEBSITE)
     tfront = str(wpage.content)
     first_str = tfront[tfront.find(from_loc):]
