@@ -16,12 +16,13 @@ def extract_data(field):
 
     @param field String file name (allowed or answers)
     """
-    if exists(field):
+    tfile = "".join([field, ".txt"])
+    if exists(tfile):
         return
     from_loc = ''.join([field, ' = "'])
     wpage = requests.get(WEBSITE)
     tfront = str(wpage.content)
     first_str = tfront[tfront.find(from_loc):]
     ret_data = first_str[0:first_str.find('".split(')]
-    with open(''.join([field, ".txt"]), 'w', encoding="utf8") as fdesc:
+    with open(tfile, 'w', encoding="utf8") as fdesc:
         fdesc.write(ret_data[len(from_loc):])
