@@ -30,6 +30,7 @@ class WebInterface():
         self.input = []
         self.runs = 1
         self.delay = delay
+        self.clue_list = ["data", "not", "found"]
 
     def add_word(self, word):
         """

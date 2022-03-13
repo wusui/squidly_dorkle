@@ -22,19 +22,6 @@ class RandomBackend(SimInterface):
         self.clue_list = self.get_next()
         self.delay = 0
 
-    def get_rcount(self,runs):
-        """
-        Return the lesser of the number of runs specified by the runs
-        parameter or MAXLIMIT
-
-        @param runs Integer number of runs specified by the user
-        @return Integer number of runs we are testing
-        """
-        MAXLIMIT = 100000
-        if runs < MAXLIMIT:
-            return runs
-        return MAXLIMIT
-
     def get_next(self):
         """
         Return the words in the next line of the file as the next game

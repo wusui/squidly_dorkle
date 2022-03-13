@@ -73,15 +73,7 @@ class Solver():
             if wsize(self.dup_words) > wsize(nwd):
                 self.dup_words = nwd.copy()
         if len(self.dup_words) > 0:
-            for chkword in self.guess_list:
-                okay = True
-                for indx in self.dup_words:
-                    if not wcheckout(chkword, self.dup_words[indx]):
-                        okay = False
-                        break
-                if okay:
-                    gm_interface.add_word(chkword)
-                    return True
+            self.scan_for_disamb(gm_interface)
             with open(self.elog, "a", encoding="UTF-8") as fdesc:
                 fdesc.write(", ".join(gm_interface.clue_list) + "\n")
                 for ent in self.dup_words:
@@ -89,6 +81,25 @@ class Solver():
                         fdesc.write("     " + ", ".join(self.dup_words[ent]) +
                                                         "\n")
             gm_interface.shutdown()
+        return False
+
+    def scan_for_disamb(self, gm_interface):
+        """
+        Check allowed words to see if there is one that uniquely
+        causes all dup_words to be disambiguated.
+
+        @param gm_interface object interface
+        @return True if good guess found, false if not
+        """
+        for chkword in self.guess_list:
+            okay = True
+            for indx in self.dup_words:
+                if not wcheckout(chkword, self.dup_words[indx]):
+                    okay = False
+                    break
+            if okay:
+                gm_interface.add_word(chkword)
+                return True
         return False
 
     def eval_next_lv(self, gm_interface, entry):
