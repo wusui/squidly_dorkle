@@ -16,7 +16,7 @@ Simple way to call this program
 
 ##### brainz.py
 
-Main solving logic modle
+Main solving logic module
 
 ##### web_interface.py
 
