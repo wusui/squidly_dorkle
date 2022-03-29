@@ -31,6 +31,7 @@ class WebInterface():
         self.runs = 1
         self.delay = delay
         self.clue_list = ["data", "not", "found"]
+        self.wcount = 0
 
     def add_word(self, word):
         """
@@ -39,6 +40,12 @@ class WebInterface():
 
         @param word String word that is being guessed
         """
+        self.wcount += 1
+        if self.wcount % 6 == 0:
+            inm = min(self.wcount, 16)
+            element = self.driver.find_element_by_id(f"box{inm},{inm},1")
+            self.driver.execute_script("arguments[0].scrollIntoView();",
+                                       element)
         self.input.append(word)
         for letter in word:
             elem = self.driver.find_element(By.ID, letter)
