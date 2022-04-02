@@ -49,6 +49,14 @@ The guessing at the end could probably be improved to avoid going over 21 guesse
 
 The other thing to note is that all guesses so far use the answer list, not the available word list.  I've restricted this to answers because I want to improve the probability of getting a 16 guess solution.  For a first pass, this seems good.
 
+### Current state of the project
+
+At this point, I need to figure out what the purpose of all this was.  My first goal was to write a sedecordle player that displays output to the screen.  Mission accomplished there, although I think that it would be cool to scroll the screen around so that the output looks more interesting.  Next I guess that there were two goals -- to play a sixteen move game and to never lose.  The sixteen move game is dependent on getting the first guess correct and will always be a crapshoot.  Running the simulator has demonstrated that it is possible to get a sixteen move game so I am fairly sure that as the code is right now it will eventually produce a sixteen move game on the web.
+
+So now it's down to not losing.  I have been analyzing the output of the simulated losses and noticed that in some cases a guaranteed non-loss can happen if better guesses are made earlier.  These guesses guarantee a non-loss but also will not result in a sixteen move win either.  Since other games have generated sixteen move wins, I do not need to try for one here, so now my highest priority is not losing.
+
+There are two word lists -- the answers list and the allowed word list.  The answers list is the list of possible words that sedecordle will use for words in the game, the allowed list is the list of words the user can guess.  Prior to this point, I have only used the answers list to guess a word because using a word not on the answers list would guarantee not solving the puzzle in 16 moves.  However, in the situation where I am trying to avoid losing, it may be the case that the best word to guesss is on the allowed list.  So I will probably now start using the allowed list in future guesses when there is no answer list word that will guarantee not losing.
+
 ### Links
 
 [Sample simulation output of 1000 sedecordle games](http://www.warrensusui.com/toybox/squidly_dorkle/squidy_out1.txt)
