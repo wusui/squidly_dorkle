@@ -6,31 +6,111 @@ Solving engine for squidly_dorkle
 """
 import os
 from datetime import datetime
-from time import sleep
 
-STARTER = ["blade", "comfy", "right", "spunk"]
+STARTER = ["raise"]
 
 class Solver():
     """
     Solver object
 
-    gm_inf      -- link to game interface (selenium webpage handler,
-                   simulator, or tester
     input       -- list of guesses made so far
-    new_entries -- dict indexed by position in the puzzle of solved words
-    dup_words   -- dict indexed by position in the puzzle of unsolved lists
-    guess_list  -- allowed guesses
     wordtable   -- all possible answers
+    wordlists   -- list of word lists (one for each of the 16 words to guess)
     """
     def __init__(self, delay=0):
         self.input = []
-        self.new_entries = {}
-        self.dup_words = {}
-        self.guess_list = get_words("allowed.txt")
-        self.wordtable = do_scan(STARTER, get_words("answers.txt"))
+        self.wordtable = get_words("answers.txt")
+        self.wordlists = []
+        self.starter = STARTER[:]
+        self.closer = ["gamma"]
+        for _ in range(16):
+            self.wordlists.append(self.wordtable[:])
         self.delay = delay
         fname = datetime.now().strftime("errorlog-%Y-%m-%d-%H-%M-%S")
         self.elog = os.sep.join(["data", fname])
+
+    def make_guess(self, guess, gm_interface):
+        """
+        Enter a guess.  Handle results if a word is solved.  If not,
+        update each wordlist based on the response from gm_interface
+
+        @param guess string 5 letter word guessed
+        @param gm_interface Interface (either web-site or simulator)
+
+        self.wordlists get updated
+        """
+        gm_interface.add_word(guess)
+        self.input.append(guess)
+        for windx in range(16):
+            if self.wordlists[windx] == []:
+                continue
+            ygpattern = gm_interface.chk_word_in_grid(windx + 1)
+            if ygpattern[-1] == "GGGGG":
+                self.wordlists[windx] = []
+                continue
+            self.wordlists[windx] = reduce_list(
+                guess, self.wordlists[windx], ygpattern[-1])
+
+    def not_done(self):
+        """
+        Return True if all wordlists are not completely solved
+        """
+        for wlist in self.wordlists:
+            if wlist:
+                return True
+        return False
+
+    def get_word_data(self):
+        """
+        Collect all the words from the wordlist and return a count of
+        letter usage and the collected word list
+
+        @return hist, wordg -- letter histogram and word list.
+        """
+        hist = {}
+        wordg = []
+        for lst in self.wordlists:
+            for wrd in lst:
+                wordg.append(wrd)
+                for ltr in wrd:
+                    if ltr in hist:
+                        hist[ltr] += 1
+                    else:
+                        hist[ltr] = 1
+        for wrd in self.input:
+            if len(self.input) > 21:
+                print("ERROR: took over 21 words")
+            for ltr in wrd:
+                hist[ltr] = 0
+        return hist, wordg
+
+    def find_bestword(self):
+        """
+        Find a word with five different letters that uses the most letters
+        in unmatched word lists so far.
+
+        @return best word (uses most letters in unmatched word list. Has
+                five different letters).
+        """
+        hist, wordg = self.get_word_data()
+        bestnumb = 0
+        bestword = ""
+        for word in wordg:
+            if len(set(word)) != 5:
+                continue
+            mynumb = 0
+            for letter in word:
+                if letter in hist:
+                    mynumb += hist[letter]
+            if mynumb > bestnumb:
+                bestnumb = mynumb
+                bestword = word
+        if bestword == "":
+            for wurd in wordg:
+                if wurd not in self.input:
+                    bestword = wurd
+                    break
+        return bestword
 
     def real_brains(self, gm_interface):
         """
@@ -39,167 +119,68 @@ class Solver():
 
         @param solver object Solver class object
         """
-        for word in STARTER:
-            gm_interface.add_word(word)
-        for word in range(1, 17):
-            indx = gm_interface.chk_word_in_grid(word, 5)
-            tindex = '|'.join(indx)
-            if "GGGGG" in tindex:
-                continue
-            if len(self.wordtable[tindex]) == 1:
-                gm_interface.add_word(self.wordtable[tindex][0])
-                self.new_entries[word] = self.wordtable[tindex][0]
-            else:
-                self.dup_words[word] = self.wordtable[tindex]
-        if len(self.dup_words) > 0:
-            if self.handle_dup_cases(gm_interface):
-                self.handle_dup_cases(gm_interface)
-
-    def handle_dup_cases(self, gm_interface):
-        """
-        At this point, scan all the unsolved words against later guesses
-        """
-        while len(self.dup_words) > 0:
-            nwd = {}
-            for entry in self.dup_words:
-                answ = self.eval_next_lv(gm_interface, entry)
-                if len(answ) == 1:
-                    gm_interface.add_word(answ[0])
-                    self.new_entries[entry] = answ[0]
-                else:
-                    nwd[entry] = answ
-            if wsize(self.dup_words) == wsize(nwd):
-                break
-            if wsize(self.dup_words) > wsize(nwd):
-                self.dup_words = nwd.copy()
-        if len(self.dup_words) > 0:
-            self.scan_for_disamb(gm_interface)
-            with open(self.elog, "a", encoding="UTF-8") as fdesc:
-                fdesc.write(", ".join(gm_interface.clue_list) + "\n")
-                for ent in self.dup_words:
-                    if len(self.dup_words[ent]) > 0:
-                        fdesc.write("     " + ", ".join(self.dup_words[ent]) +
-                                                        "\n")
-            gm_interface.shutdown()
-        return False
-
-    def scan_for_disamb(self, gm_interface):
-        """
-        Check allowed words to see if there is one that uniquely
-        causes all dup_words to be disambiguated.
-
-        @param gm_interface object interface
-        @return True if good guess found, false if not
-        """
-        for chkword in self.guess_list:
-            okay = True
-            for indx in self.dup_words:
-                if not wcheckout(chkword, self.dup_words[indx]):
-                    okay = False
+        while self.not_done():
+            found_one = False
+            for wval in range(16):
+                if len(self.wordlists[wval]) == 1:
+                    self.make_guess(self.wordlists[wval][0], gm_interface)
+                    found_one = True
                     break
-            if okay:
-                gm_interface.add_word(chkword)
-                return True
-        return False
-
-    def eval_next_lv(self, gm_interface, entry):
-        """
-        Evaluate the word list against all information in the grid
-
-        @param integer entry index into the sedecordle grid
-        @return list updated list of possible words
-        """
-        gpat = 5 * [""]
-        ypat = 5 * [""]
-        unused = ""
-        for indx, sptrn in enumerate(gm_interface.chk_word_in_grid(entry, 22)):
-            maybebad = ""
-            for indx2, spce in enumerate(sptrn):
-                lchar = gm_interface.input[indx][indx2]
-                if spce == "Y":
-                    if lchar not in ypat[indx2]:
-                        ypat[indx2] += lchar
-                if spce == "G":
-                    gpat[indx2] = lchar
-                if spce == ".":
-                    if lchar not in unused:
-                        maybebad += lchar
-            unused += addbad(indx, sptrn, maybebad, gm_interface)
-        ans_list = []
-        for word in self.dup_words[entry]:
-            if not check_b4_adding(word, gpat, ypat, unused):
-                ans_list.append(word)
-        return ans_list
-
-def addbad(indx, sptrn, maybebad, gm_interface):
-    """
-    Add to the unused character list
-
-    @param integer indx index into the sedecordle word grid
-    @param String sptrn word information from word grid
-    @param String maybebad potentially bad letters
-    @return String unused letters
-    """
-    letsunused = ""
-    for lchr in maybebad:
-        bad = True
-        for indx2, spce in enumerate(sptrn):
-            if spce != ".":
-                if gm_interface.input[indx][indx2] == lchr:
-                    bad = False
-        if bad:
-            letsunused += lchr
-    return letsunused
-
-def check_guess(word, guess):
-    """
-    Compare a word with a guess
-
-    @param word String Word being checked
-    @param guess String Word being guessed
-    @return String Green/Yellow/Black letter indication pattern
-    """
-    retv = ''
-    for indx, letter in enumerate(word):
-        if guess[indx] == letter:
-            retv += 'G'
-        else:
-            if guess[indx] in word:
-                retv += 'Y'
+            if found_one:
+                continue
+            if self.starter:
+                self.make_guess(self.starter[0], gm_interface)
+                self.starter = self.starter[1:]
             else:
-                retv += '.'
-    return retv
+                bestword = self.find_bestword()
+                self.make_guess(bestword, gm_interface)
 
-def gen_key(word, guesses):
+def check_word(guess, tword, ygpattern):
     """
-    Take guess results (Y/G/B patterns) and return a string to use as
-    part of a key to index all words
+    Given a guess, a word, and a pattern for the guess, evaluate
+    the word based on the guess and the YG-pattern
 
-    @param word String assumed word
-    @param guesses list List of guesses
+    @param guess string Word Guessed
+    @param tword word to be tested
+    @param ygpattern string 5-character YG pattern
+    @return True if word should not be in list.
     """
-    nkeys = []
-    for guess in guesses:
-        nkeys.append(check_guess(word, guess))
-    return "|".join(nkeys)
+    for indx, _ in enumerate(tword):
+        bad_bit = True
+        if ygpattern[indx] == ".":
+            if guess[indx] in tword:
+                chk = 0
+                for wcnt in range(5):
+                    if guess[wcnt] == guess[indx]:
+                        chk += 1
+                if chk == 1:
+                    break
+        if ygpattern[indx] == "G":
+            if guess[indx] != tword[indx]:
+                break
+        if ygpattern[indx] == "Y":
+            if guess[indx] not in tword:
+                break
+            if guess[indx] == tword[indx]:
+                break
+        bad_bit = False
+    return bad_bit
 
-def do_scan(wlist, anlist):
+def reduce_list(guess, wlist, ygpattern):
     """
-    Scan a list of words for matches in another list
+    Given a guess, a wordlist, and a pattern for the guess, prune entries
+    from the wordlist based on the guess and the YG-pattern
 
-    @param wlist List Words to be guessed
-    @param list of possible answer words
-    @return dict Dictionary indexed by gen_key values of words corresponding
-                 to that pattern
+    @param guess string Word Guessed
+    @param wlist list Words that are still possible solutions
+    @param ygpattern string 5-character YG pattern
+    @return new wlist value
     """
-    big_table = {}
-    for wrd in anlist:
-        tindx = gen_key(wrd, wlist)
-        if tindx not in big_table:
-            big_table[tindx] = [wrd]
-        else:
-            big_table[tindx].append(wrd)
-    return big_table
+    nlist = []
+    for tword in wlist:
+        if not check_word(guess, tword, ygpattern):
+            nlist.append(tword)
+    return nlist
 
 def get_words(wlist):
     """
@@ -212,93 +193,6 @@ def get_words(wlist):
         ostr = f_file.read()
     return ostr.split()
 
-def check_b4_adding(word, gpat, ypat, unused):
-    """
-    Return True if:
-        gpat indicates that a letter is green and a letter does not match
-        ypat indicates that a letter is yellow and this letter matches or
-            this letter is not found in the word
-        the letter matches a letter known to be unused
-
-    @param word String word to check
-    @param gpat String Green pattern
-    @param ypat String yellow pattern
-    @param unused String unused letters
-    @return True/False
-    """
-    bad = False
-    for indx, letter in enumerate(gpat):
-        if letter != '':
-            if letter != word[indx]:
-                return True
-    for indx, ylets in enumerate(ypat):
-        if ylets != '':
-            for ltr in ylets:
-                if ltr == word[indx]:
-                    return True
-                if ltr not in word:
-                    return True
-    for letter in word:
-        if letter in unused:
-            bad = True
-            break
-    return bad
-
-def wsize(dict_o_lists):
-    """
-    Count the number of entries in the list values of a dictionary
-
-    @param dictionary dictionary with lists as values
-    @return int Total number of entries in all lists
-    """
-    counter = 0
-    for entry in dict_o_lists:
-        counter += len(dict_o_lists[entry])
-    return counter
-
-def wcheckout(guess, patterns):
-    """
-    Call get_yg_val for all words that we want to check.  Return true
-    if all the YG patterns are unique (guaranteeing that we can make a
-    correct guess for all words after this one)
-
-    @param guess String word to guess
-    @param patterns list of strings that we want to make sure form unique
-           patterns
-    @return True if all words in patterns are unique
-    """
-    yglist = []
-    for poss_word in patterns:
-        yglist.append(get_yg_val(poss_word, guess))
-    if len(set(yglist)) == len(patterns):
-        return True
-    return False
-
-def get_yg_val(poss_word, guess):
-    """
-    Generate the YG pattern for a guess so that we can compare words with
-    information from the sedecordle output
-
-    @param poss_word String word we assume to be the sedecordle word
-    @param guess String a word we are comparing poss_word with
-    @return String Yellow/Green/Black output from this comparison
-    """
-    yg_str = ""
-    for indx, letter in enumerate(poss_word):
-        if letter == guess[indx]:
-            yg_str += "G"
-        else:
-            yg_str += "."
-    nong = ""
-    for indx, letter in enumerate(poss_word):
-        if yg_str[indx] != "G":
-            nong += letter
-    for indx, letter in enumerate(poss_word):
-        if letter != guess[indx]:
-            if letter in nong:
-                yg_str = yg_str[:indx] + "Y" + yg_str[indx + 1:]
-    return yg_str
-
 def solve_it(gm_interface):
     """
     Main solving routine. Make sure files are set up,call real_brains
@@ -310,14 +204,6 @@ def solve_it(gm_interface):
     if not os.path.exists("data"):
         os.mkdir("data")
     solvr = Solver()
-    for _ in range(0, gm_interface.runs):
-        solvr.real_brains(gm_interface)
-        print(gm_interface.input)
-        gm_interface.input = []
-        gm_interface.dup_words = {}
-        gm_interface.new_entries = {}
-        gm_interface.yg_patterns = [ [] for _ in range(0, 16)]
-        if gm_interface.runs > 1:
-            gm_interface.clue_list = gm_interface.get_next()
-    sleep(gm_interface.delay)
-    gm_interface.shutdown()
+    solvr.real_brains(gm_interface)
+    print(len(solvr.input), solvr.input)
+    gm_interface.shutdown(len(solvr.input))

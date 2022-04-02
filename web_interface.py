@@ -5,7 +5,7 @@
 Interface to the sedecordle webpage
 """
 import os
-
+from time import sleep
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -30,6 +30,7 @@ class WebInterface():
         self.input = []
         self.runs = 1
         self.delay = delay
+        sleep(self.delay)
         self.clue_list = ["data", "not", "found"]
         self.wcount = 0
 
@@ -41,9 +42,9 @@ class WebInterface():
         @param word String word that is being guessed
         """
         self.wcount += 1
-        if self.wcount % 6 == 0:
-            inm = min(self.wcount, 16)
-            element = self.driver.find_element_by_id(f"box{inm},{inm},1")
+        if self.wcount % 8 == 1:
+            inm = self.wcount
+            element = self.driver.find_element_by_id(f"box15,{inm},1")
             self.driver.execute_script("arguments[0].scrollIntoView();",
                                        element)
         self.input.append(word)
@@ -53,7 +54,7 @@ class WebInterface():
         elem = self.driver.find_element(By.ID, "enter2")
         elem.click()
 
-    def chk_word_in_grid(self, word, limitv):
+    def chk_word_in_grid(self, word):
         """
         Extract the color (Yellow/Green) information from words in the grid
 
@@ -61,7 +62,7 @@ class WebInterface():
         @param int limitv maximum number of guesses made so far + 1
         """
         indx = []
-        for guess in range(1, limitv):
+        for guess in range(1, 25):
             bcheck = self.driver.find_element(
                 By.ID, f"box{word},{guess},1").text
             if bcheck == '':
@@ -80,10 +81,11 @@ class WebInterface():
             indx.append(''.join(boxes))
         return indx
 
-    def shutdown(self):
+    def shutdown(self, score):
         """
         Save a screen shot and exit
         """
+        sleep(self.delay)
         self.driver.get_screenshot_as_file(
-            os.sep.join(["data", "screenshot.png"]))
+            os.sep.join(["data", f"screenshot{score}.png"]))
         self.driver.quit()

@@ -11,11 +11,10 @@ from simulator import SimInterface
 
 class RandomBackend(SimInterface):
     """
-    Object that solver code in brainz.py uses to inteface with data in a file
+    Object that solver code in simulator.py uses to create random word lists
     """
-    def __init__(self, runs):
+    def __init__(self):
         super().__init__()
-        self.runs = runs
         with open("answers.txt", "r", encoding="UTF-8") as f_file:
             ostr = f_file.read()
         self.wordlist = ostr.split()

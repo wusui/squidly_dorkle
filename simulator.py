@@ -17,6 +17,10 @@ class SimInterface():
     @param back_end object word supplier object
     @param runs integer number of times to run this
     """
+    score_total = 0
+    minscore = 21
+    maxscore = 0
+    losses = 0
     def __init__(self):
         extract_data('allowed')
         extract_data('answers')
@@ -49,13 +53,13 @@ class SimInterface():
         patt = eval_guess(self.clue_list[indx],  word)
         self.yg_patterns[indx].append(patt)
 
-    def chk_word_in_grid(self, word, limitv):
+    def chk_word_in_grid(self, word):
         """
-        Get pattern for this word nuumber
+        Get pattern for this word number
         """
-        return self.yg_patterns[word - 1][0:limitv - 1]
+        return self.yg_patterns[word - 1]
 
-    def shutdown(self):
+    def shutdown(self, score):
         """
         Stash data before exiting
         """
@@ -66,6 +70,18 @@ class SimInterface():
         with open(os.sep.join(["data", "dump.json"]), "w",
                   encoding="utf8") as outfile:
             outfile.write(ostr)
+        SimInterface.score_total += score
+        SimInterface.minscore = min(score, SimInterface.minscore)
+        SimInterface.maxscore = max(score, SimInterface.maxscore)
+        if score > 21:
+            SimInterface.losses += 1
+
+    def show_stats(self, number):
+        average = SimInterface.score_total / number
+        print(f"Average Score: {average:8.3f}")
+        print(f"   Best Score: {SimInterface.minscore:4d}")
+        print(f"  Worst Score: {SimInterface.maxscore:4d}")
+        print(f"       Losses: {SimInterface.losses:4d}")
 
 def eval_guess(cword, guess):
     """
