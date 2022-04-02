@@ -51,4 +51,7 @@ The other thing to note is that all guesses so far use the answer list, not the 
 
 ### Links
 
+[Sample simulation output of 1000 sedecordle games](http://www.warrensusui.com/toybox/squidly_dorkle/squidy_out1.txt)
+
+[Sample recording of Sedecordle game run from Squidly_dorkle](http://www.warrensusui.com/toybox/squidly_dorkle/Squidly_dorkle_example1.mp4)
 
