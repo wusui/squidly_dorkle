@@ -141,15 +141,12 @@ class Solver():
         print("REALLY MESSED UP")
         return wordg[-1]
 
-    def find_bestword(self):
+    def find_best5(self, hist, wordg):
         """
-        Find a word with five different letters that uses the most letters
-        in unmatched word lists so far.
+        Find the best guess with five different letters.
 
-        @return best word (uses most letters in unmatched word list. Has
-                five different letters).
+        @param hist, wordg -- return values from get_word_data()
         """
-        hist, wordg = self.get_word_data()
         bestnumb = 0
         bestword = ""
         if self.guess2:
@@ -165,6 +162,18 @@ class Solver():
                 if mynumb > bestnumb:
                     bestnumb = mynumb
                     bestword = word
+        return bestword
+
+    def find_bestword(self):
+        """
+        Find a word with five different letters that uses the most letters
+        in unmatched word lists so far.  If none found, call nittygritty to
+        get a solution.
+
+        @return string next word to be guessed
+        """
+        hist, wordg = self.get_word_data()
+        bestword = self.find_best5(hist, wordg)
         if bestword == "":
             self.guess2 = False
             if self.winput[-1] == wordg[0]:
@@ -173,7 +182,6 @@ class Solver():
                         continue
                     if self.wordlists[indx][0] == wordg[0]:
                         self.wordlists[indx] = self.wordlists[indx][1:]
-                        # return self.wordlists[indx][0]
             if len(wordg) == 2:
                 return wordg[0]
             return self.nittygritty(wordg)
@@ -201,6 +209,35 @@ class Solver():
             else:
                 bestword = self.find_bestword()
                 self.make_guess(bestword, gm_interface)
+
+def handle_mult_letters(guess, tword, ygpattern, bad_bit):
+    """
+    Called from check_word to handle words with more than one of the
+    same letter.  Parameters are the same except that bad_bit is
+    passed and updated in some cases
+
+    @return True if word should not be in the list
+    """
+    gval = {}
+    gmax = {}
+    wval = {}
+    glim = {}
+    for indx in range(5):
+        gmax.setdefault(guess[indx], 0)
+        gmax[guess[indx]] += 1
+        if ygpattern[indx] != '.':
+            gval.setdefault(guess[indx], 0)
+            gval[guess[indx]] += 1
+        wval.setdefault(tword[indx], 0)
+        wval[tword[indx]] += 1
+    for chkr in gval.items():
+        if gmax[chkr[0]] > chkr[1]:
+            glim[chkr[0]] = chkr[1]
+    for chkr in wval.items():
+        if chkr[0] in glim:
+            if chkr[1] > glim[chkr[0]]:
+                bad_bit = True
+    return bad_bit
 
 def check_word(guess, tword, ygpattern):
     """
@@ -231,32 +268,7 @@ def check_word(guess, tword, ygpattern):
             if guess[indx] == tword[indx]:
                 break
         bad_bit = False
-    gval = {}
-    gmax = {}
-    wval = {}
-    glim = {}
-    for indx in range(5):
-        if guess[indx] in gmax:
-            gmax[guess[indx]] += 1
-        else:
-            gmax[guess[indx]] = 1
-        if ygpattern[indx] != '.':
-            if guess[indx] in gval:
-                gval[guess[indx]] += 1
-            else:
-                gval[guess[indx]] = 1
-        if tword[indx] in wval:
-            wval[tword[indx]] += 1
-        else:
-            wval[tword[indx]] = 1
-    for chkr in gval.items():
-        if gmax[chkr[0]] > chkr[1]:
-            glim[chkr[0]] = chkr[1]
-    for chkr in wval.items():
-        if chkr[0] in glim:
-            if chkr[1] > glim[chkr[0]]:
-                bad_bit = True
-    return bad_bit
+    return handle_mult_letters(guess, tword, ygpattern, bad_bit)
 
 def reduce_list(guess, wlist, ygpattern):
     """
@@ -296,6 +308,7 @@ def solve_it(gm_interface):
     if not os.path.exists("data"):
         os.mkdir("data")
     solvr = Solver()
+    gm_interface.solver = solvr
     solvr.real_brains(gm_interface)
     print(len(solvr.winput), solvr.winput)
     if len(solvr.winput) > 21:

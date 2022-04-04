@@ -47,10 +47,6 @@ The current code usually solves the puzzle in 18 guesses.  It now appears to pre
 
 The other thing to note is that all guesses so far use the answer list, not the available word list.  I've restricted this to answers because I want to improve the probability of getting a 16 guess solution.  For a first pass, this seems good.
 
-### Current state of the project
-
-I am pretty happy with the state of things.  I'd like to clean up a little bit of inelegance in the brainz.py code, make the scrolling of the web display better, and maybe randomly select different initial guesses so that runs don't all start with RAISE.
-
 ### Links
 
 [Sample simulation output of 1000 sedecordle games](http://www.warrensusui.com/toybox/squidly_dorkle/squidy_out1.txt)

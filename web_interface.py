@@ -11,7 +11,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import chromedriver_autoinstaller
 from file_io import extract_data, WEBSITE
-from brainz import solve_it
+from brainz import solve_it, Solver
 
 class WebInterface():
     """
@@ -19,20 +19,21 @@ class WebInterface():
     web page
     """
     def __init__(self, website, delay):
+        self.solver = Solver()
         chromedriver_autoinstaller.install()
         options = webdriver.ChromeOptions()
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
         self.driver = webdriver.Chrome(service=Service(), options=options)
         self.driver.get(website)
         self.driver.maximize_window()
+        self.delay = delay
+        sleep(self.delay // 2)
         elem1 = self.driver.find_element(By.ID, "free")
         elem1.click()
+        sleep(self.delay // 2)
         self.input = []
         self.runs = 1
-        self.delay = delay
-        sleep(self.delay)
         self.clue_list = ["data", "not", "found"]
-        self.wcount = 0
 
     def add_word(self, word):
         """
@@ -41,11 +42,16 @@ class WebInterface():
 
         @param word String word that is being guessed
         """
-        self.wcount += 1
-        if self.wcount % 8 == 1:
-            inm = self.wcount
-            element = self.driver.find_element(By.ID, f"box15,{inm},1")
-            self.driver.execute_script("arguments[0].scrollIntoView();",
+        inm = 1
+        if len(self.solver.winput) >= 8:
+            inm =  len(self.solver.winput) - 7
+        bnm = 1
+        for indx in range(16):
+            if len(self.solver.wordlists[indx]) > 0:
+                bnm = 2 * (indx // 2) + 1
+                break
+        element = self.driver.find_element(By.ID, f"box{bnm},{inm},1")
+        self.driver.execute_script("arguments[0].scrollIntoView();",
                                        element)
         self.input.append(word)
         for letter in word:

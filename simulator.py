@@ -27,6 +27,7 @@ class SimInterface():
         self.yg_patterns = [ [] for _ in range(0, 16)]
         self.input = []
         self.clue_list = []
+        self.solver = []
 
     def add_word(self, word):
         """

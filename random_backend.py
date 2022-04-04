@@ -45,4 +45,4 @@ def run_sim(sim_numb):
 
 if __name__ == "__main__":
     extract_data('answers')
-    run_sim(100)
+    run_sim(1000)
