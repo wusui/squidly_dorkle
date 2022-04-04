@@ -8,24 +8,41 @@ the website
 import random
 
 from simulator import SimInterface
+from simulator import show_stats
+from file_io import extract_data
+from brainz import solve_it
 
 class RandomBackend(SimInterface):
     """
     Object that solver code in simulator.py uses to create random word lists
     """
-    def __init__(self):
+    def __init__(self, cnt):
         super().__init__()
         with open("answers.txt", "r", encoding="UTF-8") as f_file:
             ostr = f_file.read()
         self.wordlist = ostr.split()
         self.clue_list = self.get_next()
+        self.count = cnt
         self.delay = 0
 
     def get_next(self):
         """
-        Return the words in the next line of the file as the next game
-        values.
+        Randomly set up a new set of words.
         """
         random.shuffle(self.wordlist)
         self.clue_list = self.wordlist[0:16]
         return self.clue_list[:]
+
+def run_sim(sim_numb):
+    """
+    Wrapper to run the random puzzle simulator a nummber of times.
+
+    @param sim_numb number of times to run the simulation
+    """
+    for cnt in range(sim_numb):
+        solve_it(RandomBackend(cnt))
+    show_stats(sim_numb)
+
+if __name__ == "__main__":
+    extract_data('answers')
+    run_sim(100)

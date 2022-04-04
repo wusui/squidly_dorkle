@@ -7,7 +7,7 @@ Stuff that writes files in this directory goes here
 from os.path import exists
 import requests
 
-from web_interface import WEBSITE
+WEBSITE = "http://sedecordle.com"
 
 def extract_data(field):
     """

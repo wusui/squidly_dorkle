@@ -10,8 +10,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import chromedriver_autoinstaller
-
-WEBSITE = "http://sedecordle.com"
+from file_io import extract_data, WEBSITE
+from brainz import solve_it
 
 class WebInterface():
     """
@@ -89,3 +89,7 @@ class WebInterface():
         self.driver.get_screenshot_as_file(
             os.sep.join(["data", f"screenshot{score}.png"]))
         self.driver.quit()
+
+if __name__ == "__main__":
+    extract_data('answers')
+    solve_it(WebInterface(WEBSITE, 10))

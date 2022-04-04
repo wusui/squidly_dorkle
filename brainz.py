@@ -6,6 +6,7 @@ Solving engine for squidly_dorkle
 """
 import os
 from datetime import datetime
+from simulator import eval_guess
 
 STARTER = ["raise"]
 
@@ -13,21 +14,21 @@ class Solver():
     """
     Solver object
 
-    input       -- list of guesses made so far
+    winput       -- list of guesses made so far
     wordtable   -- all possible answers
     wordlists   -- list of word lists (one for each of the 16 words to guess)
     """
     def __init__(self, delay=0):
-        self.input = []
+        self.winput = []
         self.wordtable = get_words("answers.txt")
         self.wordlists = []
         self.starter = STARTER[:]
-        self.closer = ["gamma"]
         for _ in range(16):
             self.wordlists.append(self.wordtable[:])
         self.delay = delay
         fname = datetime.now().strftime("errorlog-%Y-%m-%d-%H-%M-%S")
         self.elog = os.sep.join(["data", fname])
+        self.guess2 = True
 
     def make_guess(self, guess, gm_interface):
         """
@@ -40,7 +41,10 @@ class Solver():
         self.wordlists get updated
         """
         gm_interface.add_word(guess)
-        self.input.append(guess)
+        self.winput.append(guess)
+        for windx in range(16):
+            if guess in self.wordlists[windx]:
+                self.wordlists[windx].remove(guess)
         for windx in range(16):
             if self.wordlists[windx] == []:
                 continue
@@ -77,12 +81,65 @@ class Solver():
                         hist[ltr] += 1
                     else:
                         hist[ltr] = 1
-        for wrd in self.input:
-            if len(self.input) > 21:
-                print("ERROR: took over 21 words")
+        for wrd in self.winput:
             for ltr in wrd:
                 hist[ltr] = 0
         return hist, wordg
+
+    def nittygritty(self, wordg):
+        """
+        At this point, handle the cases where we should try to find words
+        that eliminate as many of the possible words left.  This will only
+        run once there are fewer than 21 words, and the purpose here is to
+        eliminaate as many words as possible with each guess.
+
+        @param wordg list of remaining words
+        """
+        best_worst_case = len(wordg)
+        best_words = [wordg[0]]
+        for tword in self.wordtable:
+            best_word_bwc = 0
+            for indx in range(16):
+                if not self.wordlists[indx]:
+                    continue
+                wdist = {}
+                for word in self.wordlists[indx]:
+                    pattern = eval_guess(word, tword)
+                    if pattern in wdist:
+                        wdist[pattern] += 1
+                    else:
+                        wdist[pattern] = 1
+                wmax = 0
+                for elem in wdist.items():
+                    if elem[1] > wmax:
+                        wmax = elem[1]
+                best_word_bwc += wmax
+            if best_word_bwc < best_worst_case:
+                best_worst_case = best_word_bwc
+                best_words = [tword]
+            else:
+                if best_word_bwc == best_worst_case:
+                    best_words.append(tword)
+        return self.select_word(best_words, wordg)
+
+    def select_word(self, best_words, wordg):
+        """
+        Pick the right word.  Use possible solutions first
+
+        @param best_words list of equivalent answers (as far as solutions
+                          are concerned
+        @param wordg possible words to pick that are still leftt
+        @return next word to try
+        """
+        for word in best_words:
+            if word in wordg:
+                if word not in self.winput:
+                    return word
+        for word in best_words:
+            if word not in self.winput:
+                return word
+        print("REALLY MESSED UP")
+        return wordg[-1]
 
     def find_bestword(self):
         """
@@ -95,21 +152,31 @@ class Solver():
         hist, wordg = self.get_word_data()
         bestnumb = 0
         bestword = ""
-        for word in wordg:
-            if len(set(word)) != 5:
-                continue
-            mynumb = 0
-            for letter in word:
-                if letter in hist:
-                    mynumb += hist[letter]
-            if mynumb > bestnumb:
-                bestnumb = mynumb
-                bestword = word
-        if bestword == "":
-            for wurd in wordg:
-                if wurd not in self.input:
-                    bestword = wurd
+        if self.guess2:
+            for word in wordg:
+                if len(wordg) < 21:
                     break
+                if len(set(word)) != 5:
+                    continue
+                mynumb = 0
+                for letter in word:
+                    if letter in hist:
+                        mynumb += hist[letter]
+                if mynumb > bestnumb:
+                    bestnumb = mynumb
+                    bestword = word
+        if bestword == "":
+            self.guess2 = False
+            if self.winput[-1] == wordg[0]:
+                for indx in range(16):
+                    if not self.wordlists[indx]:
+                        continue
+                    if self.wordlists[indx][0] == wordg[0]:
+                        self.wordlists[indx] = self.wordlists[indx][1:]
+                        # return self.wordlists[indx][0]
+            if len(wordg) == 2:
+                return wordg[0]
+            return self.nittygritty(wordg)
         return bestword
 
     def real_brains(self, gm_interface):
@@ -164,6 +231,31 @@ def check_word(guess, tword, ygpattern):
             if guess[indx] == tword[indx]:
                 break
         bad_bit = False
+    gval = {}
+    gmax = {}
+    wval = {}
+    glim = {}
+    for indx in range(5):
+        if guess[indx] in gmax:
+            gmax[guess[indx]] += 1
+        else:
+            gmax[guess[indx]] = 1
+        if ygpattern[indx] != '.':
+            if guess[indx] in gval:
+                gval[guess[indx]] += 1
+            else:
+                gval[guess[indx]] = 1
+        if tword[indx] in wval:
+            wval[tword[indx]] += 1
+        else:
+            wval[tword[indx]] = 1
+    for chkr in gval.items():
+        if gmax[chkr[0]] > chkr[1]:
+            glim[chkr[0]] = chkr[1]
+    for chkr in wval.items():
+        if chkr[0] in glim:
+            if chkr[1] > glim[chkr[0]]:
+                bad_bit = True
     return bad_bit
 
 def reduce_list(guess, wlist, ygpattern):
@@ -205,5 +297,7 @@ def solve_it(gm_interface):
         os.mkdir("data")
     solvr = Solver()
     solvr.real_brains(gm_interface)
-    print(len(solvr.input), solvr.input)
-    gm_interface.shutdown(len(solvr.input))
+    print(len(solvr.winput), solvr.winput)
+    if len(solvr.winput) > 21:
+        print(gm_interface.clue_list)
+    gm_interface.shutdown(len(solvr.winput))

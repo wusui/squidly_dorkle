@@ -76,12 +76,17 @@ class SimInterface():
         if score > 21:
             SimInterface.losses += 1
 
-    def show_stats(self, number):
-        average = SimInterface.score_total / number
-        print(f"Average Score: {average:8.3f}")
-        print(f"   Best Score: {SimInterface.minscore:4d}")
-        print(f"  Worst Score: {SimInterface.maxscore:4d}")
-        print(f"       Losses: {SimInterface.losses:4d}")
+def show_stats(number):
+    """
+    Display stats
+
+    @param number number of times we ran the simulation
+    """
+    average = SimInterface.score_total / number
+    print(f"Average Score: {average:8.3f}")
+    print(f"   Best Score: {SimInterface.minscore:4d}")
+    print(f"  Worst Score: {SimInterface.maxscore:4d}")
+    print(f"       Losses: {SimInterface.losses:4d}")
 
 def eval_guess(cword, guess):
     """
