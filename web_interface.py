@@ -44,7 +44,7 @@ class WebInterface():
         self.wcount += 1
         if self.wcount % 8 == 1:
             inm = self.wcount
-            element = self.driver.find_element_by_id(f"box15,{inm},1")
+            element = self.driver.find_element(By.ID, f"box15,{inm},1")
             self.driver.execute_script("arguments[0].scrollIntoView();",
                                        element)
         self.input.append(word)
