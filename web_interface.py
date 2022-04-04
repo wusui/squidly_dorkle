@@ -35,6 +35,32 @@ class WebInterface():
         self.runs = 1
         self.clue_list = ["data", "not", "found"]
 
+    def compute_disp_loc(self, word):
+        """
+        Find the most likely location where word would be a solution
+
+        @param word String word passed to add_word
+        @returns int 0 through 15 (index of wordlists we should use)
+        """
+        if len(self.solver.winput) < 2:
+            return 0
+        possible = [-1, 0]
+        lsize = [5000, 5000]
+        for indx in range(16):
+            llen = len(self.solver.wordlists[indx])
+            if llen < lsize[1]:
+                lsize[1] = llen
+                possible[1] = indx
+            if word in self.solver.wordlists[indx]:
+                if llen == 1:
+                    return indx
+                if llen < lsize[0]:
+                    lsize[0] = llen
+                    possible[0] = indx
+        if possible[0] >= 0:
+            return possible[0]
+        return possible[1]
+
     def add_word(self, word):
         """
         Add a word into the sedecordle grid.  Sends character by character
@@ -43,13 +69,9 @@ class WebInterface():
         @param word String word that is being guessed
         """
         inm = 1
-        if len(self.solver.winput) >= 8:
+        if len(self.solver.winput) > 7:
             inm =  len(self.solver.winput) - 7
-        bnm = 1
-        for indx in range(16):
-            if len(self.solver.wordlists[indx]) > 0:
-                bnm = 2 * (indx // 2) + 1
-                break
+        bnm = 2 * (self.compute_disp_loc(word) // 2) + 1
         element = self.driver.find_element(By.ID, f"box{bnm},{inm},1")
         self.driver.execute_script("arguments[0].scrollIntoView();",
                                        element)
