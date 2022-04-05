@@ -6,7 +6,7 @@ Solving engine for squidly_dorkle
 """
 import os
 from datetime import datetime
-from simulator import eval_guess
+from utilities import eval_guess, MAX_GUESS_ALLOWED, WORD_SIZE, NUM_TO_SOLVE
 
 STARTER = ["raise"]
 
@@ -23,7 +23,7 @@ class Solver():
         self.wordtable = get_words("answers.txt")
         self.wordlists = []
         self.starter = STARTER[:]
-        for _ in range(16):
+        for _ in range(NUM_TO_SOLVE):
             self.wordlists.append(self.wordtable[:])
         self.delay = delay
         fname = datetime.now().strftime("errorlog-%Y-%m-%d-%H-%M-%S")
@@ -42,10 +42,10 @@ class Solver():
         """
         gm_interface.add_word(guess)
         self.winput.append(guess)
-        for windx in range(16):
+        for windx in range(NUM_TO_SOLVE):
             if guess in self.wordlists[windx]:
                 self.wordlists[windx].remove(guess)
-        for windx in range(16):
+        for windx in range(NUM_TO_SOLVE):
             if self.wordlists[windx] == []:
                 continue
             ygpattern = gm_interface.chk_word_in_grid(windx + 1)
@@ -99,7 +99,7 @@ class Solver():
         best_words = [wordg[0]]
         for tword in self.wordtable:
             best_word_bwc = 0
-            for indx in range(16):
+            for indx in range(NUM_TO_SOLVE):
                 if not self.wordlists[indx]:
                     continue
                 wdist = {}
@@ -151,9 +151,9 @@ class Solver():
         bestword = ""
         if self.guess2:
             for word in wordg:
-                if len(wordg) < 21:
+                if len(wordg) < MAX_GUESS_ALLOWED:
                     break
-                if len(set(word)) != 5:
+                if len(set(word)) != WORD_SIZE:
                     continue
                 mynumb = 0
                 for letter in word:
@@ -177,7 +177,7 @@ class Solver():
         if bestword == "":
             self.guess2 = False
             if self.winput[-1] == wordg[0]:
-                for indx in range(16):
+                for indx in range(NUM_TO_SOLVE):
                     if not self.wordlists[indx]:
                         continue
                     if self.wordlists[indx][0] == wordg[0]:
@@ -196,7 +196,7 @@ class Solver():
         """
         while self.not_done():
             found_one = False
-            for wval in range(16):
+            for wval in range(NUM_TO_SOLVE):
                 if len(self.wordlists[wval]) == 1:
                     self.make_guess(self.wordlists[wval][0], gm_interface)
                     found_one = True
@@ -222,7 +222,7 @@ def handle_mult_letters(guess, tword, ygpattern, bad_bit):
     gmax = {}
     wval = {}
     glim = {}
-    for indx in range(5):
+    for indx in range(WORD_SIZE):
         gmax.setdefault(guess[indx], 0)
         gmax[guess[indx]] += 1
         if ygpattern[indx] != '.':
@@ -254,7 +254,7 @@ def check_word(guess, tword, ygpattern):
         if ygpattern[indx] == ".":
             if guess[indx] in tword:
                 chk = 0
-                for wcnt in range(5):
+                for wcnt in range(WORD_SIZE):
                     if guess[wcnt] == guess[indx]:
                         chk += 1
                 if chk == 1:
@@ -311,6 +311,6 @@ def solve_it(gm_interface):
     gm_interface.solver = solvr
     solvr.real_brains(gm_interface)
     print(len(solvr.winput), solvr.winput)
-    if len(solvr.winput) > 21:
+    if len(solvr.winput) > MAX_GUESS_ALLOWED:
         print(gm_interface.clue_list)
     gm_interface.shutdown(len(solvr.winput))

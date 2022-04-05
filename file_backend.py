@@ -5,7 +5,7 @@
 Interface to test sedecordle solving code against a specific setup
 """
 import os
-from file_io import extract_data
+from utilities import extract_data
 from brainz import solve_it
 
 from simulator import SimInterface

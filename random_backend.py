@@ -9,7 +9,7 @@ import random
 
 from simulator import SimInterface
 from simulator import show_stats
-from file_io import extract_data
+from utilities import extract_data, NUM_TO_SOLVE
 from brainz import solve_it
 
 class RandomBackend(SimInterface):
@@ -30,7 +30,7 @@ class RandomBackend(SimInterface):
         Randomly set up a new set of words.
         """
         random.shuffle(self.wordlist)
-        self.clue_list = self.wordlist[0:16]
+        self.clue_list = self.wordlist[0:NUM_TO_SOLVE]
         return self.clue_list[:]
 
 def run_sim(sim_numb):

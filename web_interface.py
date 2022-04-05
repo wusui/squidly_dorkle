@@ -10,7 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import chromedriver_autoinstaller
-from file_io import extract_data, WEBSITE
+from utilities import extract_data, WEBSITE, MAX_GUESS_ALLOWED, NUM_TO_SOLVE
 from brainz import solve_it, Solver
 
 class WebInterface():
@@ -46,7 +46,7 @@ class WebInterface():
             return 0
         possible = [-1, 0]
         lsize = [5000, 5000]
-        for indx in range(16):
+        for indx in range(NUM_TO_SOLVE):
             llen = len(self.solver.wordlists[indx])
             if llen < lsize[1]:
                 lsize[1] = llen
@@ -69,8 +69,9 @@ class WebInterface():
         @param word String word that is being guessed
         """
         inm = 1
-        if len(self.solver.winput) > 7:
-            inm =  len(self.solver.winput) - 7
+        one_third_page = MAX_GUESS_ALLOWED // 3
+        if len(self.solver.winput) > one_third_page:
+            inm =  len(self.solver.winput) - one_third_page
         bnm = 2 * (self.compute_disp_loc(word) // 2) + 1
         element = self.driver.find_element(By.ID, f"box{bnm},{inm},1")
         self.driver.execute_script("arguments[0].scrollIntoView();",
@@ -87,7 +88,6 @@ class WebInterface():
         Extract the color (Yellow/Green) information from words in the grid
 
         @param int word number of word to check
-        @param int limitv maximum number of guesses made so far + 1
         """
         indx = []
         for guess in range(1, 25):

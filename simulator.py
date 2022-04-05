@@ -8,7 +8,7 @@ generator so that a lot of tests can be run.
 import os
 import json
 
-from file_io import extract_data
+from utilities import extract_data, eval_guess, MAX_GUESS_ALLOWED, NUM_TO_SOLVE
 
 class SimInterface():
     """
@@ -18,13 +18,13 @@ class SimInterface():
     @param runs integer number of times to run this
     """
     score_total = 0
-    minscore = 21
+    minscore = MAX_GUESS_ALLOWED
     maxscore = 0
     losses = 0
     def __init__(self):
         extract_data('allowed')
         extract_data('answers')
-        self.yg_patterns = [ [] for _ in range(0, 16)]
+        self.yg_patterns = [ [] for _ in range(NUM_TO_SOLVE)]
         self.input = []
         self.clue_list = []
         self.solver = []
@@ -35,7 +35,7 @@ class SimInterface():
 
         @param String word word to be added
         """
-        for indx in range(0, 16):
+        for indx in range(NUM_TO_SOLVE):
             if len(self.yg_patterns[indx]) ==  0:
                 self.add_pattern(indx, word)
             else:
@@ -74,7 +74,7 @@ class SimInterface():
         SimInterface.score_total += score
         SimInterface.minscore = min(score, SimInterface.minscore)
         SimInterface.maxscore = max(score, SimInterface.maxscore)
-        if score > 21:
+        if score > MAX_GUESS_ALLOWED:
             SimInterface.losses += 1
 
 def show_stats(number):
@@ -89,38 +89,3 @@ def show_stats(number):
     print(f"  Worst Score: {SimInterface.maxscore:4d}")
     print(f"       Losses: {SimInterface.losses:4d}")
 
-def eval_guess(cword, guess):
-    """
-    Compare a word with a guess.  Return the YG pattern
-
-    @param cword String Word we are testing against
-    @param guess String Word we are guessing
-    @return YG pattern for this pair
-    """
-    pass1 = []
-    for indx, letter in enumerate(cword):
-        if letter == guess[indx]:
-            pass1.append("G")
-        else:
-            pass1.append(".")
-    wyellow = {}
-    gyellow = {}
-    for letr in "abcdefghijklmnopqrstuvwxyz":
-        wyellow[letr] = 0
-        gyellow[letr] = 0
-    for indx, letter in enumerate(guess):
-        if pass1[indx] != 'G':
-            wyellow[cword[indx]] = wyellow.get(cword[indx], 0) + 1
-            gyellow[letter] = gyellow.get(letter, 0) + 1
-    pass2 = []
-    for indx, letter in enumerate(guess):
-        if pass1[indx] == 'G':
-            pass2.append('G')
-        else:
-            if wyellow[letter] > 0 and gyellow[letter] > 0:
-                pass2.append('Y')
-                wyellow[letter] -= 1
-                gyellow[letter] -= 1
-            else:
-                pass2.append('.')
-    return ''.join(pass2)
