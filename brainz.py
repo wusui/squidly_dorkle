@@ -8,8 +8,6 @@ import os
 from datetime import datetime
 from utilities import eval_guess, MAX_GUESS_ALLOWED, WORD_SIZE, NUM_TO_SOLVE
 
-STARTER = ["raise"]
-
 class Solver():
     """
     Solver object
@@ -18,11 +16,11 @@ class Solver():
     wordtable   -- all possible answers
     wordlists   -- list of word lists (one for each of the 16 words to guess)
     """
-    def __init__(self, delay=0):
+    def __init__(self, delay=0, pstart="raise"):
         self.winput = []
         self.wordtable = get_words("answers.txt")
         self.wordlists = []
-        self.starter = STARTER[:]
+        self.starter = [pstart]
         for _ in range(NUM_TO_SOLVE):
             self.wordlists.append(self.wordtable[:])
         self.delay = delay
@@ -54,6 +52,13 @@ class Solver():
                 continue
             self.wordlists[windx] = reduce_list(
                 guess, self.wordlists[windx], ygpattern[-1])
+        solvedwlcnt = 0
+        for indiv_wl in self.wordlists:
+            if indiv_wl == []:
+                solvedwlcnt += 1
+        if solvedwlcnt < gm_interface.guess_count:
+            if gm_interface.find_perfection:
+                self.wordlists = []
 
     def not_done(self):
         """
@@ -297,7 +302,7 @@ def get_words(wlist):
         ostr = f_file.read()
     return ostr.split()
 
-def solve_it(gm_interface):
+def solve_it(gm_interface, start_word='raise'):
     """
     Main solving routine. Make sure files are set up,call real_brains
     and record the results
@@ -307,10 +312,14 @@ def solve_it(gm_interface):
     """
     if not os.path.exists("data"):
         os.mkdir("data")
-    solvr = Solver()
+    solvr = Solver(pstart=start_word)
     gm_interface.solver = solvr
     solvr.real_brains(gm_interface)
     print(len(solvr.winput), solvr.winput)
     if len(solvr.winput) > MAX_GUESS_ALLOWED:
-        print(gm_interface.clue_list)
+        with open("logfailures.txt", 'a') as errfile:
+            answer = ", ".join(gm_interface.clue_list) + "\n"
+            errfile.write(answer)
+        print(gm_interface.clue_list)    
     gm_interface.shutdown(len(solvr.winput))
+    return len(solvr.winput)

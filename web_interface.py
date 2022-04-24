@@ -5,6 +5,7 @@
 Interface to the sedecordle webpage
 """
 import os
+from configparser import ConfigParser
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -18,7 +19,7 @@ class WebInterface():
     Sedecordle web interface.  Save the driver value and go to the free
     web page
     """
-    def __init__(self, website, delay):
+    def __init__(self, website, delay, perfbit=False):
         self.solver = Solver()
         chromedriver_autoinstaller.install()
         options = webdriver.ChromeOptions()
@@ -34,6 +35,8 @@ class WebInterface():
         self.input = []
         self.runs = 1
         self.clue_list = ["data", "not", "found"]
+        self.guess_count = 0
+        self.find_perfection = perfbit
 
     def compute_disp_loc(self, word):
         """
@@ -82,6 +85,7 @@ class WebInterface():
             elem.click()
         elem = self.driver.find_element(By.ID, "enter2")
         elem.click()
+        self.guess_count += 1
 
     def chk_word_in_grid(self, word):
         """
@@ -113,11 +117,35 @@ class WebInterface():
         """
         Save a screen shot and exit
         """
-        sleep(self.delay)
-        self.driver.get_screenshot_as_file(
-            os.sep.join(["data", f"screenshot{score}.png"]))
+        if not self.find_perfection:
+            self.driver.get_screenshot_as_file(
+                os.sep.join(["data", f"screenshot{score}.png"]))
+            sleep(self.delay)
         self.driver.quit()
 
-if __name__ == "__main__":
+def use_website():
+    """
+    Main module.  Get parameters from config.ini.  Runs is the number
+    of times we should run.  Seek_perfection, when true, terminates after
+    we know we can't  have a perfect run.
+    """
     extract_data('answers')
-    solve_it(WebInterface(WEBSITE, 10))
+    config = ConfigParser()
+    config.read('config.ini')
+    parse_info = config["DEFAULT"]
+    runs = int(parse_info["runs"])
+    delay = int(parse_info["delay"])
+    pbit = False
+    seek_perfection = parse_info["seek_perfection"]
+    if seek_perfection == "True":
+        pbit = True
+    for _ in range(runs):
+        solver = WebInterface(WEBSITE, delay=delay, perfbit=pbit)
+        solution = solve_it(solver)
+        if solver.find_perfection and solution >= 16:
+            sleep(10)
+            break
+
+if __name__ =="__main__":
+    use_website()
+

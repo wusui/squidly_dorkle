@@ -24,6 +24,8 @@ class RandomBackend(SimInterface):
         self.clue_list = self.get_next()
         self.count = cnt
         self.delay = 0
+        self.guess_count = 0
+        self.find_perfection = False
 
     def get_next(self):
         """
@@ -33,16 +35,16 @@ class RandomBackend(SimInterface):
         self.clue_list = self.wordlist[0:NUM_TO_SOLVE]
         return self.clue_list[:]
 
-def run_sim(sim_numb):
+def run_sim(sim_numb, word='raise'):
     """
-    Wrapper to run the random puzzle simulator a nummber of times.
+    Wrapper to run the random puzzle simulator a number of times.
 
     @param sim_numb number of times to run the simulation
     """
     for cnt in range(sim_numb):
-        solve_it(RandomBackend(cnt))
+        solve_it(RandomBackend(cnt), start_word=word)
     show_stats(sim_numb)
 
 if __name__ == "__main__":
     extract_data('answers')
-    run_sim(1000)
+    run_sim(100)
