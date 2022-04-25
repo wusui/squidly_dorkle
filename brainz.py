@@ -16,17 +16,18 @@ class Solver():
     wordtable   -- all possible answers
     wordlists   -- list of word lists (one for each of the 16 words to guess)
     """
-    def __init__(self, delay=0, pstart="raise"):
+    def __init__(self, pstart="raise", hurry=True):
         self.winput = []
         self.wordtable = get_words("answers.txt")
         self.wordlists = []
         self.starter = [pstart]
         for _ in range(NUM_TO_SOLVE):
             self.wordlists.append(self.wordtable[:])
-        self.delay = delay
+        #self.delay = delay
         fname = datetime.now().strftime("errorlog-%Y-%m-%d-%H-%M-%S")
         self.elog = os.sep.join(["data", fname])
         self.guess2 = True
+        self.hurry = hurry
 
     def make_guess(self, guess, gm_interface):
         """
@@ -178,7 +179,9 @@ class Solver():
         @return string next word to be guessed
         """
         hist, wordg = self.get_word_data()
-        bestword = self.find_best5(hist, wordg)
+        bestword = ""
+        if self.hurry:
+            bestword = self.find_best5(hist, wordg)
         if bestword == "":
             self.guess2 = False
             if self.winput[-1] == wordg[0]:
@@ -302,7 +305,7 @@ def get_words(wlist):
         ostr = f_file.read()
     return ostr.split()
 
-def solve_it(gm_interface, start_word='raise'):
+def solve_it(gm_interface, start_word='raise', hurry=True):
     """
     Main solving routine. Make sure files are set up,call real_brains
     and record the results
@@ -312,14 +315,14 @@ def solve_it(gm_interface, start_word='raise'):
     """
     if not os.path.exists("data"):
         os.mkdir("data")
-    solvr = Solver(pstart=start_word)
+    solvr = Solver(pstart=start_word, hurry=hurry)
     gm_interface.solver = solvr
     solvr.real_brains(gm_interface)
     print(len(solvr.winput), solvr.winput)
     if len(solvr.winput) > MAX_GUESS_ALLOWED:
-        with open("logfailures.txt", 'a') as errfile:
+        with open("logfailures.txt", 'a', encoding="UTF-8") as errfile:
             answer = ", ".join(gm_interface.clue_list) + "\n"
             errfile.write(answer)
-        print(gm_interface.clue_list)    
+        print(gm_interface.clue_list)
     gm_interface.shutdown(len(solvr.winput))
     return len(solvr.winput)

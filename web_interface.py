@@ -33,7 +33,6 @@ class WebInterface():
         elem1.click()
         sleep(self.delay // 2)
         self.input = []
-        self.runs = 1
         self.clue_list = ["data", "not", "found"]
         self.guess_count = 0
         self.find_perfection = perfbit
@@ -141,11 +140,13 @@ def use_website():
         pbit = True
     for _ in range(runs):
         solver = WebInterface(WEBSITE, delay=delay, perfbit=pbit)
-        solution = solve_it(solver)
+        if pbit:
+            solution = solve_it(solver, hurry=False)
+        else:
+            solution = solve_it(solver)
         if solver.find_perfection and solution >= 16:
             sleep(10)
             break
 
 if __name__ =="__main__":
     use_website()
-
