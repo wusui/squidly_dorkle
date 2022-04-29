@@ -28,6 +28,7 @@ class SimInterface():
         self.input = []
         self.clue_list = []
         self.solver = []
+        self.guess_count = 0
 
     def add_word(self, word):
         """
@@ -43,6 +44,7 @@ class SimInterface():
                     continue
                 self.add_pattern(indx, word)
         self.input.append(word)
+        self.guess_count += 1
 
     def add_pattern(self, indx, word):
         """
@@ -88,4 +90,7 @@ def show_stats(number):
     print(f"   Best Score: {SimInterface.minscore:4d}")
     print(f"  Worst Score: {SimInterface.maxscore:4d}")
     print(f"       Losses: {SimInterface.losses:4d}")
-
+    SimInterface.score_total = 0
+    SimInterface.minscore = MAX_GUESS_ALLOWED
+    SimInterface.maxscore = 0
+    SimInterface.losses = 0

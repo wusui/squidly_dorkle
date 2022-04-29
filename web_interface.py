@@ -116,7 +116,7 @@ class WebInterface():
         """
         Save a screen shot and exit
         """
-        if not self.find_perfection:
+        if score == 16 or not self.find_perfection:
             self.driver.get_screenshot_as_file(
                 os.sep.join(["data", f"screenshot{score}.png"]))
             sleep(self.delay)
@@ -134,6 +134,7 @@ def use_website():
     parse_info = config["DEFAULT"]
     runs = int(parse_info["runs"])
     delay = int(parse_info["delay"])
+    start_word = parse_info["start"]
     pbit = False
     seek_perfection = parse_info["seek_perfection"]
     if seek_perfection == "True":
@@ -141,11 +142,11 @@ def use_website():
     for _ in range(runs):
         solver = WebInterface(WEBSITE, delay=delay, perfbit=pbit)
         if pbit:
-            solution = solve_it(solver, hurry=False)
+            solution = solve_it(solver, start_word=start_word, hurry=False)
         else:
-            solution = solve_it(solver)
+            solution = solve_it(solver, start_word=start_word)
         if solver.find_perfection and solution >= 16:
-            sleep(10)
+            solver.delay = 10
             break
 
 if __name__ =="__main__":
